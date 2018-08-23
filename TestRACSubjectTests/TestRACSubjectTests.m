@@ -8,32 +8,75 @@
 
 #import <XCTest/XCTest.h>
 
+#import <ReactiveCocoa.h>
+
 @interface TestRACSubjectTests : XCTestCase
 
 @end
 
 @implementation TestRACSubjectTests
 
-- (void)setUp {
-    [super setUp];
-    // Put setup code here. This method is called before the invocation of each test method in the class.
-}
-
-- (void)tearDown {
-    // Put teardown code here. This method is called after the invocation of each test method in the class.
-    [super tearDown];
-}
-
-- (void)testExample {
-    // This is an example of a functional test case.
-    // Use XCTAssert and related functions to verify your tests produce the correct results.
-}
-
-- (void)testPerformanceExample {
-    // This is an example of a performance test case.
-    [self measureBlock:^{
-        // Put the code you want to measure the time of here.
+- (void)testSubscriber
+{
+    RACSignal *signal1 = [RACSignal createSignal:^RACDisposable *(id<RACSubscriber> subscriber) {
+        [subscriber sendNext:@(1)];
+        return nil;
     }];
+    RACSignal *signal2 = [RACSignal createSignal:^RACDisposable *(id<RACSubscriber> subscriber) {
+        [subscriber sendNext:@(2)];
+        return nil;
+    }];
+    
+    RACSubject *subject = [RACSubject subject];
+    [subject subscribeNext:^(id x) {
+        NSLog(@"subject -- %@", x);
+    }];
+    
+    [signal1 subscribe:subject];
+    [signal2 subscribe:subject];
+    
+    // 打印日志：
+    /*
+     2018-08-23 17:53:39.399263+0800 TestRACSubject[38753:1900945] subject -- 1
+     2018-08-23 17:53:39.399481+0800 TestRACSubject[38753:1900945] subject -- 2
+     */
+}
+
+- (void)testDisposable
+{
+    RACSignal *signal1 = [RACSignal createSignal:^RACDisposable *(id<RACSubscriber> subscriber) {
+        [subscriber sendNext:@(1)];
+        return [RACDisposable disposableWithBlock:^{
+            NSLog(@"disposable -- signal1");
+        }];
+    }];
+    RACSignal *signal2 = [RACSignal createSignal:^RACDisposable *(id<RACSubscriber> subscriber) {
+        [subscriber sendNext:@(2)];
+        return [RACDisposable disposableWithBlock:^{
+            NSLog(@"disposable -- signal2");
+        }];
+    }];
+    
+    RACSubject *subject1 = [RACSubject subject];
+    RACDisposable *disposable = [subject1 subscribeNext:^(id x) {
+        NSLog(@"subject1 -- %@", x);
+    }];
+    [disposable dispose];
+    
+    RACSubject *subject2 = [RACSubject subject];
+    [subject2 subscribeNext:^(id x) {
+        NSLog(@"subject2 -- %@", x);
+    }];
+    
+    [signal1 subscribe:subject1];
+    [signal2 subscribe:subject2];
+    
+    // 打印日志：
+    /*
+     2018-08-23 17:59:41.926263+0800 TestRACSubject[39011:1919016] subject2 -- 2
+     2018-08-23 17:59:41.926459+0800 TestRACSubject[39011:1919016] disposable -- signal2
+     2018-08-23 17:59:41.926606+0800 TestRACSubject[39011:1919016] disposable -- signal1
+     */
 }
 
 @end
