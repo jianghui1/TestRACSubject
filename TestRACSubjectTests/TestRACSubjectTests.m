@@ -29,16 +29,79 @@
     
     RACSubject *subject = [RACSubject subject];
     [subject subscribeNext:^(id x) {
-        NSLog(@"subject -- %@", x);
+        NSLog(@"subject -- 1 -- %@", x);
     }];
     
     [signal1 subscribe:subject];
+    
+    [subject subscribeNext:^(id x) {
+        NSLog(@"subject -- 2 -- %@", x);
+    }];
+    
     [signal2 subscribe:subject];
+    
+    [subject subscribeNext:^(id x) {
+        NSLog(@"subject -- 3 -- %@", x);
+    }];
     
     // 打印日志：
     /*
-     2018-08-23 17:53:39.399263+0800 TestRACSubject[38753:1900945] subject -- 1
-     2018-08-23 17:53:39.399481+0800 TestRACSubject[38753:1900945] subject -- 2
+     2018-08-24 20:28:07.479248+0800 TestRACSubject[56542:1446617] subject -- 1 -- 1
+     2018-08-24 20:28:07.479692+0800 TestRACSubject[56542:1446617] subject -- 1 -- 2
+     2018-08-24 20:28:07.479819+0800 TestRACSubject[56542:1446617] subject -- 2 -- 2
+     */
+}
+
+- (void)testSubscriber1
+{
+    RACSignal *signal1 = [RACSignal createSignal:^RACDisposable *(id<RACSubscriber> subscriber) {
+        [subscriber sendNext:@(1)];
+        [subscriber sendCompleted];
+        
+        return nil;
+    }];
+    
+    RACSignal *signal2 = [RACSignal createSignal:^RACDisposable *(id<RACSubscriber> subscriber) {
+        [subscriber sendNext:@(2)];
+        [subscriber sendError:nil];
+        
+        return nil;
+    }];
+    
+    RACSubject *subject = [RACSubject subject];
+    
+    [subject subscribeNext:^(id x) {
+        NSLog(@"subscriber1 -- 1 -- %@", x);
+    } error:^(NSError *error) {
+        NSLog(@"subscriber1 -- 1 -- error");
+    } completed:^{
+        NSLog(@"subscriber1 -- 1 -- completed");
+    }];
+    
+    [signal1 subscribe:subject];
+    
+    [subject subscribeNext:^(id x) {
+        NSLog(@"subscriber1 -- 2 -- %@", x);
+    } error:^(NSError *error) {
+        NSLog(@"subscriber1 -- 2 -- error");
+    } completed:^{
+        NSLog(@"subscriber1 -- 2 -- completed");
+    }];
+    
+    [signal2 subscribe:subject];
+    
+    [subject subscribeNext:^(id x) {
+        NSLog(@"subscriber1 -- 3 -- %@", x);
+    } error:^(NSError *error) {
+        NSLog(@"subscriber1 -- 3 -- error");
+    } completed:^{
+        NSLog(@"subscriber1 -- 3 -- completed");
+    }];
+    
+    // 打印日志：
+    /*
+     2018-08-24 20:34:59.468280+0800 TestRACSubject[56789:1466595] subscriber1 -- 1 -- 1
+     2018-08-24 20:34:59.469266+0800 TestRACSubject[56789:1466595] subscriber1 -- 1 -- completed
      */
 }
 
